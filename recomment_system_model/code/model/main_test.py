@@ -16,8 +16,8 @@ from math import sqrt
 import datetime
 import argparse
 import numpy as np
-with open(os.path.join(LINK_DATA,"data.picke"),"rb") as out_put_file:
-    user_dict, item_dict, event_dict, ui_dict, iu_dict, ur_dict,ir_dict = pickle.load(out_put_file)
+with open(os.path.join(LINK_DATA,"data2.pickle"),"rb") as out_put_file:
+    ui_dict, iu_dict, ur_dict,ir_dict = pickle.load(out_put_file)
 embed_dim = 50
 if torch.cuda.is_available():
     device = "cuda"
@@ -42,10 +42,8 @@ def test(model, device, test_loader):
     tmp_pred = []
     target = []
     with torch.no_grad():
-        a=0
         for test_u, test_v, tmp_target in test_loader:
-            a=a+1
-            print(a)
+
             test_u, test_v, tmp_target = test_u.to(device), test_v.to(device), tmp_target.to(device)
             val_output = model.forward(test_u, test_v)
             tmp_pred.append(list(val_output.data.cpu().numpy()))
@@ -66,13 +64,18 @@ p2e = dict()
 for i in range(4):
     with open(os.path.join(LINK_DATA,"content_e{}.pickle".format(i)),"rb") as out_put_file:
         p2e.update( pickle.load(out_put_file))
+up_dict=dict()
+for i in ui_dict.keys():
+    up_dict[i] = [p2e[kk] for kk in ui_dict[i]]
+
+print("a")
 u2e = nn.Embedding(len(user_dict), embed_dim).to(device)
 i2e = nn.Embedding(len(item_dict), embed_dim).to(device)
 r2e = nn.Embedding(len(event_dict), embed_dim).to(device)
 postEncode = PostEncode(u2e, r2e,p2e, 50, 768, iu_dict,ir_dict,device=device)
-userEncode = UserEncode(u2e, r2e,p2e, 50,iu_dict,ir_dict,device=device)
+userEncode = UserEncode(u2e, r2e,p2e, 50,up_dict,ur_dict,device=device)
 score = GraphRec(userEncode,postEncode,r2e,device=device)
 m= Training(score)
 optimizer = torch.optim.RMSprop(score.parameters(), lr=0.001, alpha=0.9)
 #test(score,"cpu",train_loader)
-m.train(train_loader,optimizer,20,999,999)
+m.train(train_loader,optimizer,20,999,999,device=device)

@@ -28,7 +28,6 @@ class PostEncode(nn.Module):
     def forward(self, nodes):
 
         embed_matrix = torch.empty(len(nodes), self.embed_dim, dtype=torch.float).to(self.device)
-
         for index, i in enumerate(nodes):
             i=int(i.numpy())
             j = self.pu_history[i]

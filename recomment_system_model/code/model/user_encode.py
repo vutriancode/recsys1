@@ -26,16 +26,16 @@ class UserEncode(nn.Module):
 
         for index, i in enumerate(nodes):
             i = int(i.numpy())
-            j = self.up_history[i]
+            p_embed = self.up_history[i]
+            number_u = len(p_embed)
             k = self.ur_history[i]
-            p_embed=[self.i2e[kk] for kk in k]
             p_embed=torch.FloatTensor(p_embed, device=self.device)
             u_rep = self.u2e.weight[i].to(self.device)
             #p_embed = self.i2e.weight[j].to(self.device)
             p_embed = F.relu(self.w_e(p_embed))
             r_embed = self.r2e.weight[k].to(self.device)
             #r_embed = self.post_embedding()
-            number_u = len(j)
+            
 
             x = torch.cat((p_embed,r_embed),1)
             x = F.relu(self.w_1(x))
