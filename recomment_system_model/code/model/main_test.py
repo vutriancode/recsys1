@@ -8,9 +8,14 @@ from CONFIG import *
 #from post_embedding import *
 from post_encode import *
 from user_encode import *
-from post_embedding import *
+#from post_embedding import *
 from final_model import *
-
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+from math import sqrt
+import datetime
+import argparse
+import numpy as np
 with open(os.path.join(LINK_DATA,"data.picke"),"rb") as out_put_file:
     user_dict, item_dict, event_dict, ui_dict, iu_dict, ur_dict,ir_dict = pickle.load(out_put_file)
 embed_dim = 50
@@ -32,7 +37,24 @@ for i in traning.keys():
     train_v.append(i[1])
     train_r.append(traning[i])
 #print(train_u)
-
+def test(model, device, test_loader):
+    model.eval()
+    tmp_pred = []
+    target = []
+    with torch.no_grad():
+        a=0
+        for test_u, test_v, tmp_target in test_loader:
+            a=a+1
+            print(a)
+            test_u, test_v, tmp_target = test_u.to(device), test_v.to(device), tmp_target.to(device)
+            val_output = model.forward(test_u, test_v)
+            tmp_pred.append(list(val_output.data.cpu().numpy()))
+            target.append(list(tmp_target.data.cpu().numpy()))
+    tmp_pred = np.array(sum(tmp_pred, []))
+    target = np.array(sum(target, []))
+    expected_rmse = sqrt(mean_squared_error(tmp_pred, target))
+    mae = mean_absolute_error(tmp_pred, target)
+    return expected_rmse, mae
 
 trainset = torch.utils.data.TensorDataset(torch.LongTensor(train_u), torch.LongTensor(train_v),
                                               torch.FloatTensor(train_r))
@@ -40,13 +62,17 @@ trainset = torch.utils.data.TensorDataset(torch.LongTensor(train_u), torch.LongT
 #                                             torch.FloatTensor(test_r))
 train_loader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True)
 #test_loader = torch.utils.data.DataLoader(testset, batch_size=args.test_batch_size, shuffle=True)
+p2e = dict()
+for i in range(4):
+    with open(os.path.join(LINK_DATA,"content_e{}.pickle".format(i)),"rb") as out_put_file:
+        p2e.update( pickle.load(out_put_file))
 u2e = nn.Embedding(len(user_dict), embed_dim).to(device)
 i2e = nn.Embedding(len(item_dict), embed_dim).to(device)
 r2e = nn.Embedding(len(event_dict), embed_dim).to(device)
-postEncode = PostEncode(u2e, r2e,embedding_document, 50, 768, iu_dict,ir_dict,content,device=device)
-userEncode = UserEncode(u2e, r2e,i2e, 50,iu_dict,ir_dict,device=device)
+postEncode = PostEncode(u2e, r2e,p2e, 50, 768, iu_dict,ir_dict,device=device)
+userEncode = UserEncode(u2e, r2e,p2e, 50,iu_dict,ir_dict,device=device)
 score = GraphRec(userEncode,postEncode,r2e,device=device)
 m= Training(score)
 optimizer = torch.optim.RMSprop(score.parameters(), lr=0.001, alpha=0.9)
-
+#test(score,"cpu",train_loader)
 m.train(train_loader,optimizer,20,999,999)

@@ -7,12 +7,13 @@ from Attention import Attention
 
 class PostEncode(nn.Module):
 
-    def __init__(self, u2e, r2e, contents_embedding, embed_dim, contents_embed_dim, pu_history, pr_history,pr_content, device="cpu"):
+    def __init__(self, u2e,r2e, p2e, embed_dim, contents_embed_dim, pu_history, pr_history, device="cpu"):
         super(PostEncode,self).__init__()
         self.u2e = u2e
         self.r2e = r2e
+        self.p2e = p2e
         self.device = device 
-        self.contents_embedding = contents_embedding
+        #self.contents_embedding = contents_embedding
         self.w_e = nn.Linear(contents_embed_dim, embed_dim).to(device)
         self.embed_dim = embed_dim
         self.w_1 = nn.Linear(2*embed_dim, embed_dim).to(device)
@@ -21,7 +22,7 @@ class PostEncode(nn.Module):
         self.o_w = nn.Linear(2 * self.embed_dim, self.embed_dim).to(device)
         self.pu_history = pu_history 
         self.pr_history = pr_history
-        self.pr_content = pr_content
+        #self.pr_content = pr_content
 
 
     def forward(self, nodes):
@@ -32,8 +33,11 @@ class PostEncode(nn.Module):
             i=int(i.numpy())
             j = self.pu_history[i]
             k = self.pr_history[i]
-            with torch.no_grad():
-                post_rep = self.contents_embedding(self.pr_content[i])
+            
+            #with torch.no_grad():
+                #post_rep = self.contents_embedding(self.pr_content[i])
+            post_rep = self.p2e[i]
+            post_rep = torch.FloatTensor(post_rep, device=self.device)
             post_rep = F.relu(self.w_e(post_rep))
             u_embed, r_embed = self.u2e.weight[j], self.r2e.weight[k]
             #print(post_rep)

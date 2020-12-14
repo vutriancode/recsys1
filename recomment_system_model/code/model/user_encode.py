@@ -13,7 +13,7 @@ class UserEncode(nn.Module):
         self.i2e = i2e
         self.device = device 
         #self.contents_embedding = contents_embedding
-        #self.w_e = nn.Linear(contents_embed_dim, embed_dim)
+        self.w_e = nn.Linear(768, embed_dim).to(device)
         self.embed_dim = embed_dim
         self.w_1 = nn.Linear(2*embed_dim, embed_dim).to(device)
         self.w_2 = nn.Linear(embed_dim,embed_dim).to(device)
@@ -28,9 +28,11 @@ class UserEncode(nn.Module):
             i = int(i.numpy())
             j = self.up_history[i]
             k = self.ur_history[i]
+            p_embed=[self.i2e[kk] for kk in k]
+            p_embed=torch.FloatTensor(p_embed, device=self.device)
             u_rep = self.u2e.weight[i].to(self.device)
-            p_embed = self.i2e.weight[j].to(self.device)
-            #p_embed = F.relu(self.w_e(p_embed))
+            #p_embed = self.i2e.weight[j].to(self.device)
+            p_embed = F.relu(self.w_e(p_embed))
             r_embed = self.r2e.weight[k].to(self.device)
             #r_embed = self.post_embedding()
             number_u = len(j)

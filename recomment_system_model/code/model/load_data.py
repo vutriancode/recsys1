@@ -23,6 +23,6 @@ class Training:
             running_loss += loss.item()
             if i % 1 == 0:
                 print('[%d, %5d] loss: %.3f, The best rmse/mae: %.6f / %.6f' % (
-                    epoch, i, running_loss / 100, best_rmse, best_mae))
+                    epoch, i, running_loss / 1, best_rmse, best_mae))
                 running_loss = 0.0
         return 0

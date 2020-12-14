@@ -50,5 +50,5 @@ class GraphRec(nn.Module):
         return scores.squeeze()
 
     def loss(self, nodes_u, nodes_v, labels_list):
-        scores = self.forward(nodes_u, nodes_v)
+        scores = self.forward(nodes_u, nodes_v).to("cpu")
         return self.criterion(scores, labels_list)
